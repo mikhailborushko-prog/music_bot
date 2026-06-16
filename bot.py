@@ -9,7 +9,8 @@ from telegram.ext import (
     ContextTypes,
 )
 
-TOKEN = "8649692039:AAGaJQSTBn5ub5CtENMZNZcrjQvI-MQR8QY"
+import os
+TOKEN = os.getenv("TOKEN")
 
 
 # ---------------- DATABASE ----------------
