@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import random
 
@@ -9,7 +10,7 @@ from telegram.ext import (
     ContextTypes,
 )
 
-import os
+# TOKEN берём из Render environment variables
 TOKEN = os.getenv("TOKEN")
 
 
@@ -24,7 +25,7 @@ def get_random_albums(limit=2):
         FROM albums
         WHERE status = 'not_listened'
         ORDER BY RANDOM()
-        LIMIT 20
+        LIMIT 50
     """)
 
     albums = cur.fetchall()
@@ -53,36 +54,22 @@ def mark_action(rowid, action):
     cur = conn.cursor()
 
     if action == "like":
-        cur.execute("""
-            UPDATE albums
-            SET user_action='like',
-                weight = weight + 1
-            WHERE rowid=?
-        """, (rowid,))
+        cur.execute("UPDATE albums SET user_action='like' WHERE rowid=?", (rowid,))
 
     elif action == "dislike":
-        cur.execute("""
-            UPDATE albums
-            SET user_action='dislike',
-                weight = max(weight - 0.5, 0.1)
-            WHERE rowid=?
-        """, (rowid,))
+        cur.execute("UPDATE albums SET user_action='dislike' WHERE rowid=?", (rowid,))
 
     elif action == "listened":
-        cur.execute("""
-            UPDATE albums
-            SET status='listened'
-            WHERE rowid=?
-        """, (rowid,))
+        cur.execute("UPDATE albums SET status='listened' WHERE rowid=?", (rowid,))
 
     conn.commit()
     conn.close()
 
 
-# ---------------- HANDLERS ----------------
+# ---------------- BOT ----------------
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🎵 Бот работает. Используй /today")
+    await update.message.reply_text("🎵 Бот работает! Напиши /today")
 
 
 async def today(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -94,11 +81,10 @@ async def today(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for rowid, artist, title, genre, score in albums:
 
-        text = (
-            f"🎵 {artist} — {title}\n"
-            f"🎸 {genre}\n"
-            f"⭐ {score}/100"
-        )
+        text = f"""🎵 {artist} — {title}
+🎸 {genre}
+⭐ {score}/100
+"""
 
         keyboard = InlineKeyboardMarkup([
             [
@@ -124,7 +110,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     messages = {
         "like": "🔥 Запомнил твой вкус",
-        "dislike": "👎 Учту и буду реже показывать",
+        "dislike": "👎 Ок, учту",
         "listened": "✅ Отмечено как прослушанное"
     }
 
